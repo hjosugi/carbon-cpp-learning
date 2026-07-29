@@ -6,10 +6,10 @@ Depends on: #003
 
 ## Tasks
 
-- [ ] Source/Lex/Parse/Check/Lower/CodeGenのinput/outputを説明する
-- [ ] pinned binaryの`carbon help`で利用可能dump optionを確認する
-- [ ] simple functionのParse Tree、SemIR、LLVM IRを追う
-- [ ] syntax errorとtype errorが異なるphaseで出ることを確認する
+- [x] Source/Lex/Parse/Check/Lower/CodeGenのinput/outputを説明する
+- [x] pinned binaryの`carbon help`で利用可能dump optionを確認する
+- [x] simple functionのParse Tree、SemIR、LLVM IRを追う
+- [x] syntax errorとtype errorが異なるphaseで出ることを確認する
 
 ## Acceptance criteria
 
@@ -18,3 +18,8 @@ Depends on: #003
 ## Evidence
 
 toolchain version、help output、各dump、annotated pipeline図を保存する。
+
+- [`docs/evidence/pipeline-trace.md`](../docs/evidence/pipeline-trace.md) — toolchain version、`carbon help` output、dump flag一覧、token/parse tree/SemIR/LLVM IR dump、syntax error/type error diagnostic、annotated pipeline図
+- [`hands-on/carbon/pipeline-trace/add.carbon`](../hands-on/carbon/pipeline-trace/add.carbon) — 追跡用ソース（`fn Add(a: i32, b: i32) -> i32`）
+- [`hands-on/carbon/pipeline-trace/syntax-error.carbon`](../hands-on/carbon/pipeline-trace/syntax-error.carbon) — Parse phase diagnostic例
+- [`hands-on/carbon/pipeline-trace/type-error.carbon`](../hands-on/carbon/pipeline-trace/type-error.carbon) — Check phase diagnostic例
