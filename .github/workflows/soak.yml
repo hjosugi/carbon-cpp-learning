@@ -1,0 +1,35 @@
+name: soak
+
+on:
+  schedule:
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  soak:
+    name: 100M line soak test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Install GNU time
+        run: sudo apt-get update && sudo apt-get install --yes time
+      - name: Build generator and release binary
+        run: make -C product/loglens build/benchmark/generate release
+      - name: 100M × 1 service
+        run: bash product/loglens/bench/resource_report.sh 100000000 1
+      - name: 100M × 1K services
+        run: bash product/loglens/bench/resource_report.sh 100000000 1000
+      - name: 100M × 100K services
+        run: bash product/loglens/bench/resource_report.sh 100000000 100000
+      - name: Upload raw reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: loglens-soak-${{ github.run_id }}
+          path: product/loglens/build/benchmark/resource-*
+          if-no-files-found: warn
+          retention-days: 14

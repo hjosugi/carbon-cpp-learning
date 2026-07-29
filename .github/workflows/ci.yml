@@ -84,6 +84,9 @@ jobs:
         run: |
           bash product/loglens/bench/resource_report.sh 1000000 1
           bash product/loglens/bench/resource_report.sh 1000000 1000
+          bash product/loglens/bench/resource_report.sh 1000000 100000
+      - name: Regression threshold check
+        run: bash product/loglens/bench/check_regression.sh
       - name: Measure adversarial integration cases
         run: |
           mkdir -p product/loglens/build/benchmark
