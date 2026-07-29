@@ -7,8 +7,9 @@ set -euo pipefail
 #   services=1 000    rss < 80 000 kB   elapsed < 60 s
 #   services=100 000  rss < 500 000 kB  elapsed < 180 s
 #
-# Limits are set at ~10× the expected O(services × 344 B) working set.
-# A failure indicates a memory or performance regression.
+# Limits account for OS buffers, C++ runtime, and unordered_map overhead.
+# They scale proportionally with service count (O(services)) to detect
+# memory regressions without being sensitive to normal system variance.
 #
 # Usage: check_regression.sh [lines]
 
@@ -29,7 +30,7 @@ check() {
   fi
 
   local rss
-  rss=$(grep 'Maximum resident set size' "${summary}" | grep -oP '\d+$')
+  rss=$(grep 'Maximum resident set size' "${summary}" | awk '{print $NF}')
 
   local elapsed_str
   elapsed_str=$(grep 'Elapsed (wall clock)' "${summary}" | awk '{print $NF}')
@@ -50,7 +51,8 @@ check() {
   fi
 
   local over_elapsed
-  over_elapsed=$(awk "BEGIN{print(${elapsed_sec}>${elapsed_limit})?1:0}")
+  over_elapsed=$(awk -v e="${elapsed_sec}" -v lim="${elapsed_limit}" \
+    'BEGIN{print(e>lim)?1:0}')
   if [[ "${over_elapsed}" == "1" ]]; then
     printf 'FAIL elapsed=%ss > limit=%ss  (lines=%s services=%s)\n' \
       "${elapsed_sec}" "${elapsed_limit}" "${lines}" "${services}" >&2

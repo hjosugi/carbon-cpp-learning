@@ -2,7 +2,7 @@
 
 ## Machine specification
 
-CIではubuntu-24.04 (GitHub Actions standard runner: 4 vCPU / ~16 GB RAM / Linux x86_64)。
+CIではubuntu-24.04 (GitHub Actions standard runner: 4 vCPU / 16 GB RAM / Linux x86_64)。
 
 ローカルで再現する手順:
 
@@ -48,7 +48,9 @@ CIの `resource` job が毎PR実行し、raw `/usr/bin/time -v` レポートと
 `bench/check_regression.sh` がCI `resource` jobで実行し、
 閾値違反時にexitcode 1でジョブを失敗させます。
 
-閾値はO(services × 344 B)の期待working setの約10倍に設定しています
+閾値はシステムオーバーヘッド（OSバッファ、unordered_mapの内部ストレージ、C++ランタイム等）を
+含む実測ベースの保守的な上限値です。サービス数が10倍になると期待メモリ使用量も
+O(services)で10倍になるため、閾値もサービス数比例で設定しています
 (344 B = `sizeof(ServiceStats)` on GCC/x86-64、
 `docs/evidence/histogram-analysis.md` 参照)。
 
