@@ -23,8 +23,15 @@ mkdir -p "$(dirname "${report}")"
   resource-report "${root_dir}/build/benchmark/generate" "${lines}" \
   "${services}" "${root_dir}/build/release/loglens"
 
+elapsed_str=$(grep 'Elapsed (wall clock)' "${report}" | awk '{print $NF}')
+elapsed_sec=$(awk -F: '{if(NF==3){print $1*3600+$2*60+$3}else if(NF==2){print $1*60+$2}else{print $1}}' \
+  <<< "${elapsed_str}")
+throughput=$(awk -v lines="${lines}" -v elapsed="${elapsed_sec}" \
+  'BEGIN{if(elapsed>0)printf "%.0f",lines/elapsed;else print 0}')
+
 {
   echo "lines=${lines}"
   echo "services=${services}"
   grep -E 'Elapsed \(wall clock\)|Maximum resident set size|Exit status' "${report}"
+  echo "throughput_lines_per_sec=${throughput}"
 } | tee "${report}.summary"
