@@ -64,8 +64,11 @@ nm -D "${build_dir}/c_abi_call" | grep loglens_bucket_upper
 # ── Step 6: run and check boundary values ────────────────────────────────────
 echo
 echo "==> Step 6: execute and verify bucket 0/1/31/32"
-LD_LIBRARY_PATH="${build_dir}:${LD_LIBRARY_PATH:-}" \
-    actual_output="$("${build_dir}/c_abi_call")"
+actual_output="$(LD_LIBRARY_PATH="${build_dir}:${LD_LIBRARY_PATH:-}" \
+    "${build_dir}/c_abi_call")" || {
+  echo "FAIL: c_abi_call exited with code $? (check LD_LIBRARY_PATH and shared library)" >&2
+  exit 1
+}
 echo "${actual_output}"
 
 expected="0
