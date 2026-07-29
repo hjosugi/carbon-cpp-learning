@@ -5,7 +5,7 @@ CPPFLAGS := -Iinclude
 CXXFLAGS := -std=c++23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow $(EXTRA_CXXFLAGS)
 SOURCES := src/parser.cpp src/aggregator.cpp src/input.cpp src/c_api.cpp
 
-.PHONY: all release debug test integration sanitize fuzz fuzz-build fuzz-long benchmark resource-report warnings clean
+.PHONY: all release debug test integration sanitize fuzz fuzz-build fuzz-long benchmark resource-report bench-matrix check-regression warnings clean
 
 all: release
 
@@ -65,6 +65,12 @@ build/benchmark/generate: bench/generate.cpp
 
 benchmark: build/benchmark/generate build/release/loglens
 	./build/benchmark/generate 100000 1000 | ./build/release/loglens --input - >/dev/null
+
+bench-matrix: build/benchmark/generate build/release/loglens
+	bash bench/bench_matrix.sh
+
+check-regression:
+	bash bench/check_regression.sh
 
 resource-report:
 	bash bench/resource_report.sh
