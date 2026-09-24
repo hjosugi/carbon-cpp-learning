@@ -98,8 +98,8 @@ fail closedを選ぶ理由は、`other` serviceへ自動集約するとtenant/se
 ## Binary archive install
 
 ```bash
-tar -xzf loglens-1.2.0-linux-x86_64.tar.gz
-sudo install -m 0755 loglens-1.2.0-linux-x86_64/bin/loglens /usr/local/bin/loglens
+tar -xzf loglens-1.3.0-linux-x86_64.tar.gz
+sudo install -m 0755 loglens-1.3.0-linux-x86_64/bin/loglens /usr/local/bin/loglens
 loglens --version
 ```
 

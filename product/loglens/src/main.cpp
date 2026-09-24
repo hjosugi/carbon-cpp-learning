@@ -17,7 +17,7 @@
 
 namespace {
 
-constexpr std::string_view kVersion = "1.2.0";
+constexpr std::string_view kVersion = "1.3.0";
 constexpr std::size_t kDefaultMaxLineBytes = 1024 * 1024;
 constexpr std::size_t kDefaultMaxServices = 10'000;
 
