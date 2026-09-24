@@ -57,6 +57,8 @@ Lab 1とLab 2の解答例は`hands-on/carbon/solutions/`にあり、`./scripts/r
 
 このlabはdesign documentの学習用です。nightlyの実装状況によってはcompileできません。
 
+pinned nightlyで動く版とC++23版は`hands-on/carbon/comparisons/counter_*.carbon`と`hands-on/cpp/counter/`にあり、`./scripts/run-carbon-comparisons.sh`と`make -C hands-on/cpp test diagnostics`で検証します。比較表とownership/lifetimeの説明は[class/value semantics evidence](evidence/class-value-semantics.md)を参照してください。
+
 ## Lab 4: choiceとpattern matching
 
 `choice`はclosed setのsum typeです。C++では`std::variant`に相当する問題を、言語レベルのalternativeと`match`で表現します。

@@ -17,6 +17,14 @@ Carbonを変更した場合:
 ./scripts/run-carbon-smoke.sh
 ./scripts/run-carbon-katas.sh
 ./scripts/run-carbon-differential.sh
+./scripts/run-carbon-comparisons.sh
+```
+
+C++ comparison lab（`hands-on/cpp`）を変更した場合:
+
+```bash
+make -C hands-on/cpp CXX=g++ test diagnostics
+make -C hands-on/cpp CXX=clang++ test diagnostics
 ```
 
 `./scripts/check-carbon.sh`は上記を含むすべての`scripts/run-carbon-*.sh`とC ABI experimentを実行します。CIの`Carbon labs (pinned nightly)` jobも同じscriptを使います。

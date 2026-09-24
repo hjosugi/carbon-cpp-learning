@@ -1,0 +1,2 @@
+counter_no_copy.carbon:10:23: error: cannot copy value of type `Counter`
+counter_no_copy.carbon:10:23: note: type `Counter` does not implement interface `Core.Copy`
