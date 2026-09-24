@@ -1,0 +1,1 @@
+min_body_uses_less_than.carbon:11:7: error: cannot access member of interface `Core.OrderedWith(T)` in type `T` that does not implement that interface

@@ -13,6 +13,7 @@ make CXX=clang++ test diagnostics
 | Lab | Code | Evidence |
 | --- | --- | --- |
 | `Counter` value type（Issue 005） | [`counter/`](counter/) | [class/value semantics](../../docs/evidence/class-value-semantics.md) |
+| `Min` with concepts（Issue 006） | [`generics/`](generics/) | [checked generics](../../docs/evidence/checked-generics.md) |
 
 ## 1. Result type
 

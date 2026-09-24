@@ -1,0 +1,1 @@
+min_int_literal.carbon:22:10: error: cannot convert type `Core.IntLiteral` into type implementing `Ordered & Core.Copy`

@@ -79,6 +79,8 @@ Carbonのchecked genericはdefinitionを一度type-checkし、interfaceをcontra
 - interfaceにないoperationをbodyで使うと、なぜdefinition側でerrorになるべきか説明する。
 - specializationとbinary sizeのtradeoffを調べる。
 
+pinned nightlyで動く`Min`と、contract外の操作・copy/destroyの書き漏れ・literal型のdiagnosticは`hands-on/carbon/comparisons/`に、C++23 concept版は`hands-on/cpp/generics/`にあります。definition checkingとinstantiation checkingの比較、specialization、binary size測定は[checked generics evidence](evidence/checked-generics.md)を参照してください。
+
 ## Lab 6: package/API/implementation
 
 Carbon libraryは1つのAPI fileと0個以上のimplementation fileで構成されます。

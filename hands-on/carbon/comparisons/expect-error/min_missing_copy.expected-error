@@ -1,0 +1,2 @@
+min_missing_copy.carbon:9:12: error: cannot copy value of type `T`
+min_missing_copy.carbon:11:10: error: cannot copy value of type `T`
