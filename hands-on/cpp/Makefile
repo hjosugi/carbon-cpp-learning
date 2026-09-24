@@ -6,7 +6,7 @@ CPPFLAGS := -I.
 CXXFLAGS := -std=c++23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror
 BUILD := build/$(notdir $(CXX))
 
-TESTS := counter/counter_test
+TESTS := counter/counter_test generics/min_test
 
 .PHONY: test diagnostics clean
 
