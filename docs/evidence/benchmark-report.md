@@ -53,6 +53,18 @@ Raw report: [`Resource and benchmark evidence` job](https://github.com/hjosugi/c
 - CPU 100%なので、pipeのbottleneckはgeneratorではなくloglensです。
 - 1→1,000 servicesのRSS増加は約0.5 MB、1,000→100,000は約83 MB（約0.85 kB/service）。`ServiceStats`（344 bytes）にservice名、`unordered_map` node、bucket arrayが加わった値で、[histogram analysis](histogram-analysis.md)の`O(unique services × 33)`と一致します。
 
+## Soak: 100M lines (CI)
+
+Raw report: [`soak` workflow run](https://github.com/hjosugi/carbon-cpp-learning/actions/runs/36015138068/job/107685601468)（AMD EPYC 7763、g++ 13.3.0、artifact `loglens-soak-36015138068`）。
+
+| Services | User s | System s | CPU | Elapsed | Peak RSS | Throughput |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 131.27 | 3.15 | 99% | 2:14.44 | 3,732 kB | 743,826 lines/s |
+| 1,000 | 142.02 | 3.85 | 99% | 2:25.89 | 4,380 kB | 685,448 lines/s |
+| 100,000 | 154.95 | 4.17 | 99% | 2:39.14 | 89,004 kB | 628,378 lines/s |
+
+1M行のCI値（3,832 / 4,376 / 87,796 kB）と比べ、入力を100倍にしてもpeak RSSは変わりません。`check_regression.sh 100000000`は3件ともOKでした。
+
 ## Soak: 100M lines (local)
 
 | Services | User s | System s | CPU | Elapsed | Peak RSS | Throughput |
@@ -63,7 +75,7 @@ Raw report: [`Resource and benchmark evidence` job](https://github.com/hjosugi/c
 
 入力を100倍にしてもpeak RSSは1M lines時とほぼ同じです（同じlocal machineの1M×100,000は88,472 kB、100M×100,000は88,932 kB）。aggregation stateは入力行数に対して`O(1)`で、100M行でもleakやgrowthはありません。`check_regression.sh 100000000`はこの3件をすべてOKと判定しました。
 
-CIでは`.github/workflows/soak.yml`が毎週月曜03:23 UTCと手動実行で同じ100M×{1, 1,000, 100,000}を測り、同じthresholdで判定し、raw reportを`loglens-soak-<run_id>` artifactに14日間保存します。
+`.github/workflows/soak.yml`は毎週月曜03:23 UTCと手動実行で同じ100M×{1, 1,000, 100,000}を測り、同じthresholdで判定し、raw reportを`loglens-soak-<run_id>` artifactに14日間保存します。
 
 ## Regression thresholds
 
