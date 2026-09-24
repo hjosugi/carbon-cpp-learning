@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -17,6 +18,14 @@ class LatencyHistogram {
 
   void add(std::uint32_t latency_ms) noexcept;
   [[nodiscard]] auto count() const noexcept -> std::uint64_t;
+  // Bucket index for a latency: the number of significant bits, so 0 maps to
+  // bucket 0 and 2^(n-1)..2^n-1 map to bucket n (1..32).
+  [[nodiscard]] static constexpr auto bucket_for(
+      std::uint32_t latency_ms) noexcept -> std::size_t {
+    return static_cast<std::size_t>(std::bit_width(latency_ms));
+  }
+  // Inclusive upper edge of a bucket. Buckets >= 32 saturate at UINT32_MAX,
+  // so the shift below is always by 1..31 bits.
   [[nodiscard]] static constexpr auto bucket_upper(
       std::size_t bucket) noexcept -> std::uint64_t {
     if (bucket == 0) return 0;

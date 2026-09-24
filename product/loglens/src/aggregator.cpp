@@ -1,7 +1,6 @@
 #include "loglens/aggregator.hpp"
 
 #include <algorithm>
-#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <iomanip>
@@ -16,8 +15,7 @@ Aggregator::Aggregator(std::size_t max_services) noexcept
     : max_services_(max_services) {}
 
 void LatencyHistogram::add(std::uint32_t latency_ms) noexcept {
-  const auto bucket = static_cast<std::size_t>(std::bit_width(latency_ms));
-  ++buckets_[bucket];
+  ++buckets_[bucket_for(latency_ms)];
   ++count_;
 }
 

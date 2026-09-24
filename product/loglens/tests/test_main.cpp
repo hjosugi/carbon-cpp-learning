@@ -98,11 +98,19 @@ auto test_all_histogram_boundaries() -> void {
         bucket == 0 ? 0 : std::uint32_t{1} << (bucket - 1);
     const auto upper = static_cast<std::uint32_t>(expected_upper);
     for (const std::uint32_t value : {lower, upper}) {
+      CHECK(loglens::LatencyHistogram::bucket_for(value) == bucket);
       loglens::LatencyHistogram histogram;
       histogram.add(value);
       CHECK(histogram.count() == 1);
       CHECK(histogram.percentile_upper(1.0) == expected_upper);
     }
+  }
+
+  // Out-of-range buckets saturate like bucket 32; they never shift by >= 64.
+  constexpr auto u32_max = std::numeric_limits<std::uint32_t>::max();
+  for (const std::uint32_t bucket : {33U, 64U, u32_max}) {
+    CHECK(loglens::LatencyHistogram::bucket_upper(bucket) == u32_max);
+    CHECK(loglens_bucket_upper(bucket) == u32_max);
   }
 }
 

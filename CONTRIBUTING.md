@@ -16,6 +16,7 @@ Carbonを変更した場合:
 ```bash
 ./scripts/run-carbon-smoke.sh
 ./scripts/run-carbon-katas.sh
+./scripts/run-carbon-differential.sh
 ```
 
 C ABI (`product/loglens/include/loglens/c_api.h`) またはCarbon interop experimentを変更した場合:
