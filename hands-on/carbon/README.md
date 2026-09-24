@@ -54,3 +54,4 @@
 | Topic | Evidence |
 | --- | --- |
 | class/value semantics（Issue 005） | [class/value semantics evidence](../../docs/evidence/class-value-semantics.md) |
+| checked generics（Issue 006） | [checked generics evidence](../../docs/evidence/checked-generics.md) |

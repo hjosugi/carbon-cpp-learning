@@ -1,0 +1,1 @@
+min3_missing_destroy.carbon:16:14: error: cannot access member of interface `Core.Destroy` in type `T` that does not implement that interface

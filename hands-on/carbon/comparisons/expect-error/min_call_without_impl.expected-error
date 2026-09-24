@@ -1,0 +1,2 @@
+min_call_without_impl.carbon:28:10: error: cannot convert type `Unordered` into type implementing `Ordered & Core.Copy`
+min_call_without_impl.carbon:18:1: note: while deducing parameters of generic declared here
