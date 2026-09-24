@@ -146,4 +146,4 @@ C++側は`make test`の`test_all_histogram_boundaries`が全33 bucketで`Latency
 ## Scope
 
 - Carbonはpre-0.1のため、このexperimentはpinned nightlyだけを対象にし、製品のbuild/runtime dependencyにはしません（[readiness review](../11-readiness-review.md)）。
-- CIはCarbon toolchainをinstallしません。`.carbon-version`を更新するときは、`./scripts/run-carbon-smoke.sh`と一緒にこのscriptも再実行してください。
+- CIの`Carbon labs (pinned nightly)` jobがpinned nightlyをinstallし、`./scripts/check-carbon.sh`経由でこのscriptも毎回実行します。`.carbon-version`を更新するときも同じjobで再検証されます。

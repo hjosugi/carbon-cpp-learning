@@ -355,5 +355,5 @@ add.o ─────────── nm                        T _CAdd.Pipeli
 ## Scope
 
 - 出力はpinned nightly `0.0.0-0.nightly.2026.07.11`のものです。Carbonはpre-0.1なので、token kind、parse node名、SemIRの表記、manglingはnightly更新で変わりえます。`.carbon-version`を更新したら`./scripts/run-carbon-pipeline-trace.sh`を再実行してください。
-- CIはCarbon toolchainをinstallしません。
+- CIの`Carbon labs (pinned nightly)` jobがpinned nightlyをinstallし、`./scripts/check-carbon.sh`経由でこのscriptも毎回実行します。
 - phase構成の公式説明: [Toolchain architecture](https://docs.carbon-lang.dev/toolchain/docs/)、[nightly release](https://github.com/carbon-language/carbon-lang/releases/tag/v0.0.0-0.nightly.2026.07.11)（2026-09-24確認）。
