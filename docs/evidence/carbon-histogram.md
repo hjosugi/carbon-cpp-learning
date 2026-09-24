@@ -161,4 +161,5 @@ scriptはstdoutの`cmp`とexit codeの一致を要求し、Carbon出力をgolden
 ## Scope
 
 - Carbonはpre-0.1のため、このportはpinned nightlyだけを対象にし、製品のbuild/runtime dependencyにはしません（[readiness review](../11-readiness-review.md)）。
+- 同じscriptのrandom 10,000 vectors、vector hash、mismatch shrinkingは[differential test evidence](carbon-differential.md)にあります。
 - Carbon side dataは`u32`/`u64`だけで、C ABI（[C ABI experiment](c-abi-experiment.md)）と同じfixed-width contractです。

@@ -61,4 +61,4 @@ Expected summary from sample:
 
 公式asset digestを照合したpinned nightlyをdownloadし、4本すべてで`compile`、`link`、実行まで確認しています。Carbonはpre-0.1なので、nightly更新時には必ず再検証してください。design labsは意図的にtoolchain-supported保証の対象外です。
 
-Carbon histogram port（`BucketFor` / `BucketUpper`）は全bucket境界の100 vectorsでC++ oracleとbyte一致します（[evidence](evidence/carbon-histogram.md)、`./scripts/run-carbon-differential.sh`）。
+Carbon histogram port（`BucketFor` / `BucketUpper`）は全bucket境界の100 vectorsと、seed 20260925の10,000 random vectorsでC++ oracleとbyte一致します（[port evidence](evidence/carbon-histogram.md)、[differential evidence](evidence/carbon-differential.md)、`./scripts/run-carbon-differential.sh`）。CIの`Carbon labs (pinned nightly)` jobが`./scripts/check-carbon.sh`でCarbon checkをすべて実行します。

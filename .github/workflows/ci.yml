@@ -103,3 +103,20 @@ jobs:
           name: loglens-resource-evidence
           path: product/loglens/build/benchmark/resource-*
           if-no-files-found: error
+
+  carbon:
+    name: Carbon labs (pinned nightly)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Install the pinned Carbon nightly (SHA-256 checked)
+        run: ./scripts/bootstrap-carbon.sh
+      - name: Smoke, katas, pipeline trace, C ABI and C++/Carbon differential
+        run: ./scripts/check-carbon.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: carbon-differential
+          path: build/carbon-differential/
+          if-no-files-found: warn

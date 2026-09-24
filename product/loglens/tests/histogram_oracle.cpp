@@ -15,8 +15,9 @@
 // malformed line; the lines before it have already been written.
 //
 // Usage:
-//   histogram_oracle boundary   write every bucket-edge vector
-//   histogram_oracle eval       evaluate a vector file from stdin
+//   histogram_oracle boundary             write every bucket-edge vector
+//   histogram_oracle random SEED COUNT    write COUNT deterministic vectors
+//   histogram_oracle eval                 evaluate a vector file from stdin
 
 #include <charconv>
 #include <cstdint>
@@ -53,6 +54,62 @@ auto write_boundary_vectors(std::ostream& out) -> void {
   }
   out << "B 64\n"
       << "B " << kU32Max << '\n';
+}
+
+// SplitMix64 (Steele, Lea and Flood 2014). It is fully specified by integer
+// arithmetic modulo 2^64, so the same seed gives the same vectors with any
+// compiler or standard library, unlike the <random> distributions.
+class SplitMix64 {
+ public:
+  explicit SplitMix64(std::uint64_t seed) noexcept : state_(seed) {}
+
+  auto next() noexcept -> std::uint64_t {
+    state_ += 0x9e3779b97f4a7c15U;
+    auto z = state_;
+    z = (z ^ (z >> 30U)) * 0xbf58476d1ce4e5b9U;
+    z = (z ^ (z >> 27U)) * 0x94d049bb133111ebU;
+    return z ^ (z >> 31U);
+  }
+
+ private:
+  std::uint64_t state_;
+};
+
+// Uniform u32 latencies would put half of the vectors in bucket 32, so a
+// latency vector first picks a bucket 0..32 and then a value inside it.
+// Bucket vectors are mostly 0..39 (edges and saturation) and one in eight is
+// an arbitrary u32. Three in four vectors are latency vectors.
+auto write_random_vectors(std::ostream& out, std::uint64_t seed,
+                          std::uint64_t count) -> void {
+  out << "# loglens histogram vectors v1\n"
+      << "# random: generator=splitmix64 seed=" << seed << " count=" << count
+      << '\n';
+  SplitMix64 random(seed);
+  for (std::uint64_t index = 0; index < count; ++index) {
+    if (random.next() % 4 != 0) {
+      const auto bucket = random.next() % 33;
+      if (bucket == 0) {
+        out << "L 0\n";
+        continue;
+      }
+      const auto lower = std::uint64_t{1} << (bucket - 1);
+      out << "L " << lower + random.next() % lower << '\n';
+    } else if (random.next() % 8 == 0) {
+      out << "B " << (random.next() & kU32Max) << '\n';
+    } else {
+      out << "B " << random.next() % 40 << '\n';
+    }
+  }
+}
+
+// A decimal u64 that fills the whole view, for command-line arguments.
+auto parse_u64(std::string_view text) -> std::optional<std::uint64_t> {
+  if (text.empty()) return std::nullopt;
+  std::uint64_t value{};
+  const auto* const end = text.data() + text.size();
+  const auto [ptr, error] = std::from_chars(text.data(), end, value);
+  if (error != std::errc{} || ptr != end) return std::nullopt;
+  return value;
 }
 
 // A decimal u32 that fills the whole view. from_chars rejects signs and
@@ -98,6 +155,7 @@ auto evaluate(std::istream& in, std::ostream& out) -> int {
 
 auto usage() -> int {
   std::cerr << "usage: histogram_oracle boundary\n"
+               "       histogram_oracle random SEED COUNT\n"
                "       histogram_oracle eval < vectors\n";
   return 64;
 }
@@ -106,12 +164,19 @@ auto usage() -> int {
 
 auto main(int argc, char** argv) -> int {
   std::ios::sync_with_stdio(false);
-  if (argc != 2) return usage();
+  if (argc < 2) return usage();
   const std::string_view command(argv[1]);
-  if (command == "boundary") {
+  if (command == "boundary" && argc == 2) {
     write_boundary_vectors(std::cout);
     return 0;
   }
-  if (command == "eval") return evaluate(std::cin, std::cout);
+  if (command == "random" && argc == 4) {
+    const auto seed = parse_u64(argv[2]);
+    const auto count = parse_u64(argv[3]);
+    if (!seed || !count) return usage();
+    write_random_vectors(std::cout, *seed, *count);
+    return 0;
+  }
+  if (command == "eval" && argc == 2) return evaluate(std::cin, std::cout);
   return usage();
 }
