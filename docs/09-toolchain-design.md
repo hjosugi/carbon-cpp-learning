@@ -27,6 +27,8 @@ Driverがcommandと全体flowを結び、Diagnosticsが各phaseのerrorを出し
 | CodeGen | LLVM Module | object file | target/backend |
 | Link | object files/libs | executable | missing symbol/runtime/library |
 
+pinned nightlyで`a + b`をtokenからobject fileまで追跡した実例と、lex/parse/check errorのowner phaseは[pipeline trace evidence](evidence/pipeline-trace.md)にあります（`./scripts/run-carbon-pipeline-trace.sh`で再生成）。
+
 compile失敗を一括りにせず、どのphaseかを診断します。Carbon contributorになる場合、small featureがtokens、parse node、SemIR、lowering、diagnostic、file testsのどこへ影響するかを先にmapします。
 
 ## Design patterns
