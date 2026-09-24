@@ -43,4 +43,4 @@ GCC 16.1.1 / Linux x86_64でのlayout evidence:
 
 各serviceは固定33 bucketsと固定counterだけを保持します。入力record自体は保持しないため、aggregation stateは`O(unique services × 33)`、入力行数に対して`O(1)`です。`unordered_map`のnode/bucket/string overheadはstandard library実装とservice名長に依存します。
 
-peak RSSはCIの`Resource and benchmark evidence` jobで1,000,000 records、1 service / 1,000 servicesを測り、raw `/usr/bin/time -v` reportをartifactとして保存します。同じartifactには行長・service cardinality・`/dev/full`・closed pipeの異常系integration suiteのpeak RSSも含みます。
+peak RSSはCIの`Resource and benchmark evidence` jobで1,000,000 records、1 / 1,000 / 100,000 servicesを測り（結果とregression thresholdは[benchmark report](benchmark-report.md)）、raw `/usr/bin/time -v` reportをartifactとして保存します。同じartifactには行長・service cardinality・`/dev/full`・closed pipeの異常系integration suiteのpeak RSSも含みます。

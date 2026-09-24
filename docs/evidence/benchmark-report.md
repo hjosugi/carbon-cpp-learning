@@ -1,96 +1,113 @@
-# Benchmark and soak test evidence
+# Benchmark and soak report
 
-## Machine specification
+検証日: 2026-09-24
 
-CIではubuntu-24.04 (GitHub Actions standard runner: 4 vCPU / 16 GB RAM / Linux x86_64)。
+## Machines
 
-ローカルで再現する手順:
+| | CI benchmark | Local soak / profile |
+| --- | --- | --- |
+| Runner / host | GitHub-hosted `ubuntu-24.04` | developer laptop |
+| CPU | AMD EPYC 7763, 4 vCPU (2 cores × 2 threads) | AMD Ryzen 3 7330U, 8 threads |
+| Memory | 16,373,452 kB | 23,434,660 kB |
+| OS / kernel | Ubuntu 24.04.5 LTS / Linux 6.17.0-1022-azure | CachyOS / Linux 7.2.6 |
+| Compiler | g++ 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04.1) | g++ 16.2.1 |
+
+CIの値は`bench/machine_spec.sh`がjobごとに`resource-machine.txt`へ記録します。local machineは測定中にほかのbuildで高負荷（load average 60〜98）だったため、localのwall-clockとthroughputは参考値です。peak RSSとprofileの比率は負荷の影響を受けにくい指標として使います。
+
+Compiler flags（release build、`product/loglens/Makefile`）:
+
+```text
+-std=c++23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -O3 -DNDEBUG
+```
+
+## Commands
 
 ```bash
-g++ --version  # GCC 14 on Ubuntu 24.04
-make -C product/loglens bench-matrix
+make -C product/loglens bench-matrix                 # 1M lines x 1 / 1,000 / 100,000 services
+make -C product/loglens check-regression             # thresholds below
+make -C product/loglens LINES=100000000 bench-matrix # 100M-line soak
+make -C product/loglens LINES=100000000 check-regression
+bash product/loglens/bench/profile.sh 1000000 1000   # perf profile + flamegraph
 ```
 
-## Compiler flags
-
-```
--O3 -DNDEBUG -std=c++23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
-```
-
-`product/loglens/Makefile` の `release` target を参照。
-
-## Generator
-
-`bench/generate.cpp` は固定xorshift seed (`0x9e3779b97f4a7c15`) で行を生成します。
-同じ引数で常に同一出力を生成し、テストの決定性を保ちます。
+各measurementは次の形です。GNU timeは`loglens`だけを包むので、CPU timeとpeak RSSはgeneratorを含みません。`--max-services`はcardinalityに合わせます（default 10,000では100,000-service caseがexit 5でfail closedするため）。
 
 ```bash
-# 1M lines, 1K services (先頭3行を確認)
-./product/loglens/build/benchmark/generate 1000000 1000 | head -3
+build/benchmark/generate LINES SERVICES |
+  /usr/bin/time -v build/release/loglens --input - --max-services SERVICES >/dev/null
 ```
 
-## Benchmark matrix (1M lines)
+`bench/generate.cpp`は固定xorshift seed（`0x9e3779b97f4a7c15`）で、同じ引数なら常に同じ入力を出します。`throughput_lines_per_sec`はlines / wall-clock elapsedです。
 
-`make -C product/loglens bench-matrix` または
-`bash product/loglens/bench/bench_matrix.sh 1000000` で実行。
+## Results: 1M lines (CI)
 
-CIの `resource` job が毎PR実行し、raw `/usr/bin/time -v` レポートと
-`.summary` ファイルを `loglens-resource-evidence` artifactに保存します。
+Raw report: [`Resource and benchmark evidence` job](https://github.com/hjosugi/carbon-cpp-learning/actions/runs/36009717414/job/107666971267)（artifact `loglens-resource-evidence`に`resource-1000000-*.txt`、`.summary`、`resource-machine.txt`）。
 
-| lines     | services | throughput (lines/s) | peak RSS      |
-|-----------|----------|----------------------|---------------|
-| 1,000,000 | 1        | CI artifact          | CI artifact   |
-| 1,000,000 | 1,000    | CI artifact          | CI artifact   |
-| 1,000,000 | 100,000  | CI artifact          | CI artifact   |
+| Services | User s | System s | CPU | Elapsed | Peak RSS | Throughput |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1.30 | 0.03 | 100% | 1.33 s | 3,832 kB | 751,880 lines/s |
+| 1,000 | 1.43 | 0.04 | 100% | 1.48 s | 4,376 kB | 675,676 lines/s |
+| 100,000 | 1.58 | 0.06 | 100% | 1.64 s | 87,796 kB | 609,756 lines/s |
+
+- CPU 100%なので、pipeのbottleneckはgeneratorではなくloglensです。
+- 1→1,000 servicesのRSS増加は約0.5 MB、1,000→100,000は約83 MB（約0.85 kB/service）。`ServiceStats`（344 bytes）にservice名、`unordered_map` node、bucket arrayが加わった値で、[histogram analysis](histogram-analysis.md)の`O(unique services × 33)`と一致します。
+
+## Soak: 100M lines (local)
+
+| Services | User s | System s | CPU | Elapsed | Peak RSS | Throughput |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 137.82 | 4.88 | 80% | 2:57.59 | 4,324 kB | 563,095 lines/s |
+| 1,000 | 167.30 | 5.28 | 82% | 3:30.09 | 4,904 kB | 475,986 lines/s |
+| 100,000 | 201.34 | 5.92 | 84% | 4:04.69 | 88,932 kB | 408,680 lines/s |
+
+入力を100倍にしてもpeak RSSは1M lines時とほぼ同じです（同じlocal machineの1M×100,000は88,472 kB、100M×100,000は88,932 kB）。aggregation stateは入力行数に対して`O(1)`で、100M行でもleakやgrowthはありません。`check_regression.sh 100000000`はこの3件をすべてOKと判定しました。
+
+CIでは`.github/workflows/soak.yml`が毎週月曜03:23 UTCと手動実行で同じ100M×{1, 1,000, 100,000}を測り、同じthresholdで判定し、raw reportを`loglens-soak-<run_id>` artifactに14日間保存します。
 
 ## Regression thresholds
 
-`bench/check_regression.sh` がCI `resource` jobで実行し、
-閾値違反時にexitcode 1でジョブを失敗させます。
+`bench/check_regression.sh [lines]`がCI `resource` jobで毎PR実行され、1つでも超えるとjobを失敗させます。
 
-閾値はシステムオーバーヘッド（OSバッファ、unordered_mapの内部ストレージ、C++ランタイム等）を
-含む実測ベースの保守的な上限値です。サービス数が10倍になると期待メモリ使用量も
-O(services)で10倍になるため、閾値もサービス数比例で設定しています
-(344 B = `sizeof(ServiceStats)` on GCC/x86-64、
-`docs/evidence/histogram-analysis.md` 参照)。
+| Services | Peak RSS limit | CPU limit (user + system) | Exit |
+| ---: | ---: | ---: | --- |
+| 1 | 8,000 kB | 7 s / 1M lines | must be 0 |
+| 1,000 | 9,000 kB | 7 s / 1M lines | must be 0 |
+| 100,000 | 180,000 kB | 8 s / 1M lines | must be 0 |
 
-| lines     | services | RSS limit   | elapsed limit |
-|-----------|----------|-------------|---------------|
-| 1,000,000 | 1        | 20,000 kB   | 60 s          |
-| 1,000,000 | 1,000    | 80,000 kB   | 60 s          |
-| 1,000,000 | 100,000  | 500,000 kB  | 180 s         |
+- RSS limitは上表CI値の約2倍で、行数に依存しません。100M-line soakも同じlimitで判定するため、`O(lines)`のmemory growthは確実に検出されます。
+- CPU limitはCI値の約5倍で、行数に比例します。wall-clockではなくloglensのCPU timeを使うので、generator待ちやrunnerの混雑では失敗しにくく、1 recordあたりの処理が数倍遅くなるregressionは検出します。
+- unit/integration testsはwall clockに合否を依存させません（[test matrix](test-matrix.md)）。時間を使う判定はこのbenchmark gateだけです。
 
-## Soak test (100M lines)
+## Profile: hot path
 
-毎週月曜 3:23 UTC または手動で `.github/workflows/soak.yml` が実行されます。
-raw reportは `loglens-soak-<run_id>` artifactに14日間保存されます。
+`bench/profile.sh`でrelease flagsに`-g -fno-omit-frame-pointer`を加えたbinaryを別pathにbuildし、file入力（generatorを除外）を`perf record --call-graph dwarf`で測りました（local machine、g++ 16.2.1）。
 
-ローカル手動実行:
+Flamegraph:
 
-```bash
-bash product/loglens/bench/resource_report.sh 100000000 1
-bash product/loglens/bench/resource_report.sh 100000000 1000
-bash product/loglens/bench/resource_report.sh 100000000 100000
-```
+- [`flamegraph-1M-1K.svg`](flamegraph-1M-1K.svg)（1M lines × 1,000 services）
+- [`flamegraph-1M-100K.svg`](flamegraph-1M-100K.svg)（1M lines × 100,000 services）
 
-## Profile / flamegraph
+`profile.sh`は`product/loglens/build/benchmark/flamegraph-<lines>-<services>.svg`へ出力します。
 
-Linux `perf` によるhot path profile手順 (フレームポインタ付きビルド必須):
+Self time上位（`perf report --no-children --sort symbol`）:
 
-```bash
-# フレームポインタ付きrelease buildを作成
-make -C product/loglens EXTRA_CXXFLAGS="-fno-omit-frame-pointer" release
+| Symbol | 1,000 services | 100,000 services |
+| --- | ---: | ---: |
+| `std::istream::get()` | 35.4% | 18.6% |
+| `std::istream::sentry::sentry` | 23.7% | 12.5% |
+| `loglens::Aggregator::add` | 16.0% | 33.6% |
+| `loglens::parse_line` | 13.6% | 6.7% |
+| `loglens::read_bounded_line` | 6.9% | 3.4% |
+| `loglens::render_json` | - | 6.2% |
+| `std::_Hash_bytes` | 1.5% | 1.0% |
 
-# プロファイル記録
-product/loglens/build/benchmark/generate 1000000 1000 | \
-  perf record -g --call-graph fp \
-  product/loglens/build/release/loglens --input - >/dev/null
+同じcommandを繰り返しても比率の差は数ポイント以内でした。
 
-# flamegraph生成 (https://github.com/brendangregg/FlameGraph が必要)
-perf script | stackcollapse-perf.pl | flamegraph.pl \
-  > product/loglens/build/benchmark/flamegraph-1000000-1000.svg
-```
+hot pathの説明:
 
-flamegraph SVGの保存先規則:
-`product/loglens/build/benchmark/flamegraph-<lines>-<services>.svg`
-(`build/` はgitignoreされているため、成果物はArtifactとして別途保存してください)
+1. **入力読み込み（1,000 servicesで約66%）**: `read_bounded_line`は`std::istream::get()`で1文字ずつ読みます。1文字ごとに`sentry`の構築（stream stateとtieの確認）が走り、これが`get()`本体と合わせて時間の約6割を占めます。line長の上限を守るための設計ですが、throughputの上限はここで決まります。
+2. **service lookup（100,000 servicesで約36%）**: `Aggregator::add`の`unordered_map::find`です。serviceが100,000種類になるとhash tableのnodeが増え、1 recordあたりのlookupが重くなります。service名は短いのでSSOに収まり、`std::string`生成のheap allocationはprofileに現れません。
+3. **parse（約7〜14%）**: `parse_line`のfield分割、RFC 3339 timestamp、整数の検証です。
+4. **JSON出力**: 100,000 servicesではservice名のsortを含む`render_json`が約6%になります。1回だけなので行数には比例しません。
+
+改善候補（この変更では未実施）: bufferへまとめて読んでから改行を探す、`unordered_map`のtransparent hashでlookupを軽くする。いずれもline-size limitとfail-closed動作を保つことが前提です。

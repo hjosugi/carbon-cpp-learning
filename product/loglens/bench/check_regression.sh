@@ -6,10 +6,12 @@ set -euo pipefail
 #
 # Peak RSS limits do not depend on the line count: aggregation state is
 # O(unique services) and O(1) in input length, so a 100M-line soak must stay
-# under the same limit as a 1M-line run. Elapsed limits are per million lines
-# and scale linearly with the line count.
+# under the same limit as a 1M-line run. CPU limits (loglens user + system
+# time) are per million lines and scale linearly with the line count. CPU time
+# is used rather than wall-clock time so that waiting on the generator or a
+# busy runner does not count against loglens.
 #
-# The limits are about 2x the peak RSS and 5x the elapsed time measured on the
+# The limits are about 2x the peak RSS and 5x the CPU time measured on the
 # GitHub-hosted ubuntu-24.04 runner (docs/evidence/benchmark-report.md), wide
 # enough for runner noise while still catching an O(lines) memory leak or a
 # per-record slowdown.
@@ -39,7 +41,7 @@ report() {
   fi
 }
 
-# check SERVICES RSS_LIMIT_KB SECONDS_PER_MILLION_LINES
+# check SERVICES RSS_LIMIT_KB CPU_SECONDS_PER_MILLION_LINES
 check() {
   local services="$1" rss_limit="$2" seconds_per_million="$3"
   local summary="${root_dir}/build/benchmark/resource-${lines}-${services}.txt.summary"
@@ -50,16 +52,14 @@ check() {
     return
   fi
 
-  local exit_status rss elapsed_str elapsed_sec elapsed_limit
+  local exit_status rss user_sec system_sec cpu_sec cpu_limit
   exit_status="$(field "${summary}" '^[[:space:]]*Exit status')"
   rss="$(field "${summary}" 'Maximum resident set size')"
-  elapsed_str="$(field "${summary}" 'Elapsed \(wall clock\)')"
-  elapsed_sec="$(awk -F: '{
-    if (NF == 3) { print $1 * 3600 + $2 * 60 + $3 }
-    else if (NF == 2) { print $1 * 60 + $2 }
-    else { print $1 }
-  }' <<<"${elapsed_str}")"
-  elapsed_limit="$(awk -v l="${lines}" -v s="${seconds_per_million}" \
+  user_sec="$(field "${summary}" 'User time \(seconds\)')"
+  system_sec="$(field "${summary}" 'System time \(seconds\)')"
+  cpu_sec="$(awk -v u="${user_sec}" -v s="${system_sec}" \
+    'BEGIN { if (u != "" && s != "") printf "%.2f", u + s }')"
+  cpu_limit="$(awk -v l="${lines}" -v s="${seconds_per_million}" \
     'BEGIN { printf "%.1f", l / 1000000 * s }')"
 
   if [[ "${exit_status}" == "0" ]]; then
@@ -74,17 +74,20 @@ check() {
     report FAIL "rss=${rss:-missing} kB > ${rss_limit} kB (${label})"
   fi
 
-  if awk -v e="${elapsed_sec}" -v lim="${elapsed_limit}" \
-    'BEGIN { exit !(e != "" && e <= lim) }'; then
-    report OK "elapsed=${elapsed_sec}s <= ${elapsed_limit}s (${label})"
+  if awk -v c="${cpu_sec}" -v lim="${cpu_limit}" \
+    'BEGIN { exit !(c != "" && c <= lim) }'; then
+    report OK "cpu=${cpu_sec}s <= ${cpu_limit}s (${label})"
   else
-    report FAIL "elapsed=${elapsed_sec:-missing}s > ${elapsed_limit}s (${label})"
+    report FAIL "cpu=${cpu_sec:-missing}s > ${cpu_limit}s (${label})"
   fi
 }
 
-#     services  rss_kB  s/1M lines
-check 1         8000    5
-check 1000      8000    5
-check 100000    80000   10
+# Baseline on ubuntu-24.04 (4 vCPU AMD EPYC 7763, GCC 13.3), 1M lines,
+# peak RSS / CPU: 1 service 3,832 kB / 1.33 s, 1,000 services
+# 4,376 kB / 1.47 s, 100,000 services 87,796 kB / 1.64 s.
+#     services  rss_kB  cpu_s/1M lines
+check 1         8000    7
+check 1000      9000    7
+check 100000    180000  8
 
 exit "${rc}"

@@ -10,6 +10,8 @@
 | CLI golden | zero/one/many services, valid JSON, byte equality | `make integration` |
 | CLI failure | exit 2/3/4/5, `/dev/full`, closed pipe | `make integration` |
 | adversarial RSS | line/service limits, `/dev/full`, closed pipe | CI `Resource and benchmark evidence` |
+| benchmark regression | 1M lines x 1 / 1,000 / 100,000 services, peak RSS and CPU limits | `make bench-matrix check-regression` |
+| soak | 100M lines x 1 / 1,000 / 100,000 services, same RSS limits | weekly `soak` workflow |
 | build modes | debug and release run the same integration suite | `make integration` |
 | memory/UB | ASan, LSan where available, UBSan | `make sanitize` |
 | parser fuzz | valid/invalid/oversized seeds, 10,000-case PR smoke | `make CXX=clang++ fuzz` |
@@ -17,4 +19,4 @@
 
 10分実測値とcorpus hashは[`fuzz-10min.md`](fuzz-10min.md)に保存しています。
 
-testsはnetwork、wall clock、random seedへ合否を依存させません。benchmark generatorは固定xorshift stateを使います。golden testは同じmany-service inputを2回実行し、byte-identical outputを確認します。
+testsはnetwork、wall clock、random seedへ合否を依存させません（CPU timeを使うのはbenchmark regression gateだけで、baselineの約5倍の余裕を持たせています）。benchmark generatorは固定xorshift stateを使います。golden testは同じmany-service inputを2回実行し、byte-identical outputを確認します。

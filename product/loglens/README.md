@@ -53,6 +53,8 @@ make CXX=clang++ fuzz
 make CXX=clang++ FUZZ_SECONDS=600 fuzz-long
 make benchmark
 make resource-report
+make bench-matrix check-regression
+make LINES=100000000 bench-matrix check-regression
 make release
 ```
 
