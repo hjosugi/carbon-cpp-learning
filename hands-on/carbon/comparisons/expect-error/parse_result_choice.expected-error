@@ -1,0 +1,3 @@
+parse_result_choice.carbon:8:5: error: semantics TODO: `choice alternatives with parameters are not yet supported`
+parse_result_choice.carbon:15:3: error: semantics TODO: `HandleMatchIntroducer`
+parse_result_choice.carbon:16:19: error: expected `,` or `)`

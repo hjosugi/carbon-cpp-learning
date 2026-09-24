@@ -69,6 +69,8 @@ pinned nightlyで動く版とC++23版は`hands-on/carbon/comparisons/counter_*.c
 - errorをexceptionではなくvalueにする利点を説明する。
 - exhaustive matchがAPI evolutionに与えるtradeoffを考える。
 
+payload付き`choice`と`match`はpinned nightlyで未実装です。正確なdiagnosticと、tagged classで書いた実行版、C++の`std::expected` / `std::variant` / exception版は[choice/errors-as-values evidence](evidence/choice-errors.md)を参照してください。
+
 ## Lab 5: checked generics
 
 Carbonのchecked genericはdefinitionを一度type-checkし、interfaceをcontractとして使います。C++ templateのinstantiation時diagnosticと対比します。

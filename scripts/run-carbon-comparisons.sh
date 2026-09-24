@@ -2,7 +2,7 @@
 # Verify the Carbon side of the C++ comparison labs in
 # hands-on/carbon/comparisons against the pinned Carbon nightly:
 #   - every NAME.carbon with a NAME.expected file must compile, link, run, and
-#     print exactly NAME.expected;
+#     print exactly NAME.expected (with NAME.input on stdin when it exists);
 #   - every expect-error/NAME.carbon must be rejected by the check phase, and
 #     every line of expect-error/NAME.expected-error must appear in the
 #     diagnostics. These files are design-only code or deliberate mistakes.
@@ -33,7 +33,9 @@ for expected in "${source_dir}"/*.expected; do
   "${carbon}" compile --output-last-input-only \
     --output="${build_dir}/${name}.o" "${source}"
   "${carbon}" link --output="${build_dir}/${name}" "${build_dir}/${name}.o"
-  "${build_dir}/${name}" >"${build_dir}/${name}.out"
+  input="${source%.carbon}.input"
+  [[ -f "${input}" ]] || input=/dev/null
+  "${build_dir}/${name}" <"${input}" >"${build_dir}/${name}.out"
   if diff -u "${expected}" "${build_dir}/${name}.out"; then
     cat "${build_dir}/${name}.out"
   else
