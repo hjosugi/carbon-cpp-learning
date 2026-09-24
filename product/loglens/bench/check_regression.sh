@@ -1,70 +1,90 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Check benchmark summary files against regression thresholds.
-#
-# Thresholds (lines=1 000 000):
-#   services=1        rss < 20 000 kB   elapsed < 60 s
-#   services=1 000    rss < 80 000 kB   elapsed < 60 s
-#   services=100 000  rss < 500 000 kB  elapsed < 180 s
-#
-# Limits account for OS buffers, C++ runtime, and unordered_map overhead.
-# They scale proportionally with service count (O(services)) to detect
-# memory regressions without being sensitive to normal system variance.
+# Check the summaries written by bench_matrix.sh against regression thresholds.
 #
 # Usage: check_regression.sh [lines]
+#
+# Peak RSS limits do not depend on the line count: aggregation state is
+# O(unique services) and O(1) in input length, so a 100M-line soak must stay
+# under the same limit as a 1M-line run. Elapsed limits are per million lines
+# and scale linearly with the line count.
+#
+# The limits are about 2x the peak RSS and 5x the elapsed time measured on the
+# GitHub-hosted ubuntu-24.04 runner (docs/evidence/benchmark-report.md), wide
+# enough for runner noise while still catching an O(lines) memory leak or a
+# per-record slowdown.
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 lines="${1:-1000000}"
 rc=0
 
-check() {
-  local services="$1"
-  local rss_limit="$2"
-  local elapsed_limit="$3"
-  local summary="${root_dir}/build/benchmark/resource-${lines}-${services}.txt.summary"
+if [[ ! "${lines}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "lines must be a positive integer" >&2
+  exit 2
+fi
 
-  if [[ ! -f "${summary}" ]]; then
-    printf 'MISSING %s\n' "${summary}" >&2
-    rc=1
-    return
-  fi
+field() {
+  local summary="$1" pattern="$2"
+  grep -E "${pattern}" "${summary}" | awk '{print $NF}'
+}
 
-  local rss
-  rss=$(grep 'Maximum resident set size' "${summary}" | awk '{print $NF}')
-
-  local elapsed_str
-  elapsed_str=$(grep 'Elapsed (wall clock)' "${summary}" | awk '{print $NF}')
-  local elapsed_sec
-  elapsed_sec=$(awk -F: '{
-    if (NF==3) { print $1*3600+$2*60+$3 }
-    else if (NF==2) { print $1*60+$2 }
-    else { print $1 }
-  }' <<< "${elapsed_str}")
-
-  if [[ "${rss}" -gt "${rss_limit}" ]]; then
-    printf 'FAIL rss=%s kB > limit=%s kB  (lines=%s services=%s)\n' \
-      "${rss}" "${rss_limit}" "${lines}" "${services}" >&2
+report() {
+  local status="$1"
+  shift
+  if [[ "${status}" == "FAIL" ]]; then
+    printf 'FAIL %s\n' "$*" >&2
     rc=1
   else
-    printf 'OK   rss=%s kB <= limit=%s kB  (lines=%s services=%s)\n' \
-      "${rss}" "${rss_limit}" "${lines}" "${services}"
-  fi
-
-  local over_elapsed
-  over_elapsed=$(awk -v e="${elapsed_sec}" -v lim="${elapsed_limit}" \
-    'BEGIN{print(e>lim)?1:0}')
-  if [[ "${over_elapsed}" == "1" ]]; then
-    printf 'FAIL elapsed=%ss > limit=%ss  (lines=%s services=%s)\n' \
-      "${elapsed_sec}" "${elapsed_limit}" "${lines}" "${services}" >&2
-    rc=1
-  else
-    printf 'OK   elapsed=%ss <= limit=%ss  (lines=%s services=%s)\n' \
-      "${elapsed_sec}" "${elapsed_limit}" "${lines}" "${services}"
+    printf 'OK   %s\n' "$*"
   fi
 }
 
-check 1      20000  60
-check 1000   80000  60
-check 100000 500000 180
+# check SERVICES RSS_LIMIT_KB SECONDS_PER_MILLION_LINES
+check() {
+  local services="$1" rss_limit="$2" seconds_per_million="$3"
+  local summary="${root_dir}/build/benchmark/resource-${lines}-${services}.txt.summary"
+  local label="lines=${lines} services=${services}"
+
+  if [[ ! -f "${summary}" ]]; then
+    report FAIL "missing ${summary} (${label})"
+    return
+  fi
+
+  local exit_status rss elapsed_str elapsed_sec elapsed_limit
+  exit_status="$(field "${summary}" '^[[:space:]]*Exit status')"
+  rss="$(field "${summary}" 'Maximum resident set size')"
+  elapsed_str="$(field "${summary}" 'Elapsed \(wall clock\)')"
+  elapsed_sec="$(awk -F: '{
+    if (NF == 3) { print $1 * 3600 + $2 * 60 + $3 }
+    else if (NF == 2) { print $1 * 60 + $2 }
+    else { print $1 }
+  }' <<<"${elapsed_str}")"
+  elapsed_limit="$(awk -v l="${lines}" -v s="${seconds_per_million}" \
+    'BEGIN { printf "%.1f", l / 1000000 * s }')"
+
+  if [[ "${exit_status}" == "0" ]]; then
+    report OK "exit=0 (${label})"
+  else
+    report FAIL "exit=${exit_status:-missing} (${label})"
+  fi
+
+  if [[ "${rss}" =~ ^[0-9]+$ && "${rss}" -le "${rss_limit}" ]]; then
+    report OK "rss=${rss} kB <= ${rss_limit} kB (${label})"
+  else
+    report FAIL "rss=${rss:-missing} kB > ${rss_limit} kB (${label})"
+  fi
+
+  if awk -v e="${elapsed_sec}" -v lim="${elapsed_limit}" \
+    'BEGIN { exit !(e != "" && e <= lim) }'; then
+    report OK "elapsed=${elapsed_sec}s <= ${elapsed_limit}s (${label})"
+  else
+    report FAIL "elapsed=${elapsed_sec:-missing}s > ${elapsed_limit}s (${label})"
+  fi
+}
+
+#     services  rss_kB  s/1M lines
+check 1         8000    5
+check 1000      8000    5
+check 100000    80000   10
 
 exit "${rc}"

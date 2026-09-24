@@ -1,6 +1,7 @@
 CXX ?= g++
 EXTRA_CXXFLAGS ?=
 FUZZ_SECONDS ?= 600
+LINES ?= 1000000
 CPPFLAGS := -Iinclude
 CXXFLAGS := -std=c++23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow $(EXTRA_CXXFLAGS)
 SOURCES := src/parser.cpp src/aggregator.cpp src/input.cpp src/c_api.cpp
@@ -67,10 +68,10 @@ benchmark: build/benchmark/generate build/release/loglens
 	./build/benchmark/generate 100000 1000 | ./build/release/loglens --input - >/dev/null
 
 bench-matrix: build/benchmark/generate build/release/loglens
-	bash bench/bench_matrix.sh
+	bash bench/bench_matrix.sh $(LINES)
 
 check-regression:
-	bash bench/check_regression.sh
+	bash bench/check_regression.sh $(LINES)
 
 resource-report:
 	bash bench/resource_report.sh

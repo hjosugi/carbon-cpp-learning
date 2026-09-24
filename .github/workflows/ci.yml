@@ -80,13 +80,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes time
       - name: Benchmark smoke
         run: make -C product/loglens benchmark
-      - name: Measure one million records
-        run: |
-          bash product/loglens/bench/resource_report.sh 1000000 1
-          bash product/loglens/bench/resource_report.sh 1000000 1000
-          bash product/loglens/bench/resource_report.sh 1000000 100000
+      - name: Record machine spec
+        run: bash product/loglens/bench/machine_spec.sh
+      - name: Measure one million records (1 / 1,000 / 100,000 services)
+        run: make -C product/loglens bench-matrix
       - name: Regression threshold check
-        run: bash product/loglens/bench/check_regression.sh
+        run: make -C product/loglens check-regression
       - name: Measure adversarial integration cases
         run: |
           mkdir -p product/loglens/build/benchmark
