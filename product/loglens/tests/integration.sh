@@ -30,7 +30,7 @@ diff -u "${tmp_dir}/many.json" "${tmp_dir}/many-repeat.json"
 printf '%s\n' "${valid}" | "${binary}" --input - >"${tmp_dir}/stdin.json"
 diff -u "${script_dir}/golden/one-service.json" "${tmp_dir}/stdin.json"
 
-"${binary}" --version | grep -qx 'loglens 1.0.0'
+"${binary}" --version | grep -qx 'loglens 1.1.0'
 "${binary}" --help >/dev/null
 
 expect_exit() {

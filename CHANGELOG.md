@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 - 2026-09-24
+
+- Added a LogLens benchmark matrix (1M lines x 1 / 1,000 / 100,000 services) with CPU and peak-RSS regression thresholds in CI, a weekly 100M-line soak workflow, a perf profile script, and a benchmark report with flamegraphs.
+- Added the Carbon C ABI experiment: a pinned-nightly Carbon executable calls `loglens_bucket_upper` through a shared library, with symbol, lowered-signature, and 0/1/31/32 boundary checks.
+- Added checked Carbon basic syntax kata solutions with expected output and expected check-phase diagnostics.
+- Added a Carbon toolchain pipeline trace from tokens to object file, with lex/parse/check diagnostic owner checks.
+- Replaced committed graphify skill files with `scripts/graphify.sh` setup and update entry points.
+
 ## 1.0.0 - 2026-07-12
 
 - Added strict RFC 3339 UTC timestamp validation and CRLF-safe bounded input.

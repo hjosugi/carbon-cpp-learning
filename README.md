@@ -13,7 +13,7 @@ Carbonはまだ`0.1`未到達の実験的言語です。公式nightlyは動き�
 | `hands-on/carbon/nightly-smoke` | 現在のtoolchainを実際にcompile/link/runする | pinned nightlyを基準 |
 | `hands-on/carbon/design-labs` | classes、generics、choice、package設計を学ぶ | design-first。一部は未実装の可能性あり |
 | `hands-on/cpp` | Carbonの狙いをC++23と比較する | GCC 13+/Clang 17+ |
-| `product/loglens` | ストリーミングログ集計CLIを製品品質で実装する | C++23版v1.0.0をテスト済み |
+| `product/loglens` | ストリーミングログ集計CLIを製品品質で実装する | C++23版v1.1.0をテスト済み |
 | `issues` | 学習から製品化までの作業をGitHub Issues化する | そのまま転記可能 |
 
 ## 5分で開始
