@@ -2,11 +2,11 @@
 #   make test         build and run every *_test.cpp
 #   make diagnostics  check that expect-error/*.cpp are rejected as recorded
 CXX ?= g++
-CPPFLAGS := -I.
+CPPFLAGS := -I. -I../../product/loglens/include
 CXXFLAGS := -std=c++23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror
 BUILD := build/$(notdir $(CXX))
 
-TESTS := counter/counter_test generics/min_test
+TESTS := counter/counter_test generics/min_test errors/parse_result_test
 
 .PHONY: test diagnostics clean
 

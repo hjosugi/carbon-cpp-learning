@@ -45,7 +45,7 @@
 
 ## C++ comparison labs
 
-`comparisons/`はC++23版（`hands-on/cpp/`）と対になるCarbon版です。pinned nightlyで動く部分は実行し、未実装のdesign部分は`expect-error/`で正確なdiagnosticを固定します。
+`comparisons/`はC++23版（`hands-on/cpp/`）と対になるCarbon版です。pinned nightlyで動く部分は実行し（`NAME.input`があればstdinへ渡します）、未実装のdesign部分は`expect-error/`で正確なdiagnosticを固定します。
 
 ```bash
 ../../scripts/run-carbon-comparisons.sh
@@ -55,3 +55,4 @@
 | --- | --- |
 | class/value semantics（Issue 005） | [class/value semantics evidence](../../docs/evidence/class-value-semantics.md) |
 | checked generics（Issue 006） | [checked generics evidence](../../docs/evidence/checked-generics.md) |
+| choice/errors-as-values（Issue 007） | [choice/errors-as-values evidence](../../docs/evidence/choice-errors.md) |

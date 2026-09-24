@@ -14,6 +14,7 @@ make CXX=clang++ test diagnostics
 | --- | --- | --- |
 | `Counter` value type（Issue 005） | [`counter/`](counter/) | [class/value semantics](../../docs/evidence/class-value-semantics.md) |
 | `Min` with concepts（Issue 006） | [`generics/`](generics/) | [checked generics](../../docs/evidence/checked-generics.md) |
+| `std::expected` / `std::variant` / exception（Issue 007） | [`errors/`](errors/) | [choice/errors-as-values](../../docs/evidence/choice-errors.md) |
 
 ## 1. Result type
 
