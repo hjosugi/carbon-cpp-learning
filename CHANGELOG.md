@@ -7,6 +7,7 @@
 - Added the `Carbon labs (pinned nightly)` CI job and `scripts/check-carbon.sh`, so every Carbon check now runs in CI.
 - Added the `carbon-nightly` workflow: it verifies the newest Carbon nightly with every Carbon check and proposes the pin bump on one rolling branch with a release-notes summary, using only `GITHUB_TOKEN` and never merging.
 - Added a `Counter` class/value-semantics comparison in Carbon and C++23 with expected output, expected diagnostics, and C++ tests in CI.
+- Added a checked generics vs. C++ concepts comparison (`Min` / `Min3`): definition-checking and instantiation-checking diagnostics on both sides, impl specialization, and a 1/4/16-type instantiation size and compile-time measurement.
 
 ## 1.1.0 - 2026-09-24
 

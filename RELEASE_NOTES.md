@@ -1,6 +1,6 @@
 # v1.2.0 — Carbon × Modern C++ hands-on lab
 
-v1.1.0に、histogram coreのCarbon port、C++/Carbon differential test、CIでのCarbon check、Carbon nightly更新の自動検証、`Counter`のclass/value semantics比較を追加したreleaseです。pinned Carbon nightlyは`0.0.0-0.nightly.2026.07.11`のままです。
+v1.1.0に、histogram coreのCarbon port、C++/Carbon differential test、CIでのCarbon check、Carbon nightly更新の自動検証、`Counter`のclass/value semantics比較、checked genericsとC++ conceptsの比較を追加したreleaseです。pinned Carbon nightlyは`0.0.0-0.nightly.2026.07.11`のままです。
 
 ## Highlights
 
@@ -9,6 +9,7 @@ v1.1.0に、histogram coreのCarbon port、C++/Carbon differential test、CIで�
 - CIの`Carbon labs (pinned nightly)` job: pinned nightlyをSHA-256照合してinstallし、smoke、kata、pipeline trace、C ABI、比較lab、differential testをすべて実行
 - `carbon-nightly` workflow: 最新nightlyの発見とasset確認を分け、すべてのCarbon checkを通った候補だけを1本のproposal branchで提案（release notes summary付き、mergeはしない、`GITHUB_TOKEN`のみ）。手順とrollbackは`docs/13-carbon-nightly-refresh.md`
 - `Counter` value typeのCarbon/C++23比較: field order、initialization、copy、move、borrow、destroyを期待出力と期待diagnosticで検証
+- checked generics（`Min[T: Ordered & Core.Copy]`）とC++23 conceptの比較: contract外operationがCarbonではdefinition時、C++ templateではinstantiation時にerrorになることを具体的diagnosticで確認し、1/4/16 typeでのinstantiation数・`.text`サイズ・compile timeを測定
 - LogLens 1.2.0 Linux x86_64 binary、SHA256SUMS、provenance、SPDX 2.3 SBOM
 
 ## Verification
