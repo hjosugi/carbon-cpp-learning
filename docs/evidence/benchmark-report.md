@@ -49,6 +49,7 @@ Raw report: [`Resource and benchmark evidence` job](https://github.com/hjosugi/c
 | 1,000 | 1.43 | 0.04 | 100% | 1.48 s | 4,376 kB | 675,676 lines/s |
 | 100,000 | 1.58 | 0.06 | 100% | 1.64 s | 87,796 kB | 609,756 lines/s |
 
+- 測定scriptが同じ後続commitのCI（[run 36014008586](https://github.com/hjosugi/carbon-cpp-learning/actions/runs/36014008586)）はAMD EPYC 9V74に割り当てられ、CPU 1.04 / 1.15 / 1.41 s、peak RSS 3,872 / 4,460 / 87,916 kBでした。hosted runnerのCPU modelはjobごとに変わりますが、RSSはほぼ変わりません。
 - CPU 100%なので、pipeのbottleneckはgeneratorではなくloglensです。
 - 1→1,000 servicesのRSS増加は約0.5 MB、1,000→100,000は約83 MB（約0.85 kB/service）。`ServiceStats`（344 bytes）にservice名、`unordered_map` node、bucket arrayが加わった値で、[histogram analysis](histogram-analysis.md)の`O(unique services × 33)`と一致します。
 
