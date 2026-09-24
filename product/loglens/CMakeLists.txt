@@ -18,6 +18,16 @@ add_executable(loglens_tests tests/test_main.cpp)
 target_link_libraries(loglens_tests PRIVATE loglens_core)
 add_test(NAME loglens_tests COMMAND loglens_tests)
 
+# C++ reference for the Carbon histogram port (scripts/run-carbon-differential.sh).
+add_executable(histogram_oracle tests/histogram_oracle.cpp)
+target_link_libraries(histogram_oracle PRIVATE loglens_core)
+add_test(
+  NAME histogram_oracle_golden
+  COMMAND bash -c "\"$0\" boundary | \"$0\" eval | diff -u \"$1\" -"
+    $<TARGET_FILE:histogram_oracle>
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/golden/histogram-boundary.txt
+)
+
 add_test(
   NAME loglens_integration
   COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration.sh $<TARGET_FILE:loglens>

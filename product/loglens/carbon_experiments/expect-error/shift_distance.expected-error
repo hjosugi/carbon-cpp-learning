@@ -1,0 +1,1 @@
+error: shift distance >= type width of 64 in `1 << 64`
