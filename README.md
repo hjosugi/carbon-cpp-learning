@@ -51,7 +51,8 @@ make release
 11. [検証結果](docs/10-verification.md)
 12. [Product readiness review](docs/11-readiness-review.md)
 13. [Report schema contract](docs/12-report-schema.md)
-14. [Issuesバックログ](issues/README.md)
+14. [Carbon nightly refresh](docs/13-carbon-nightly-refresh.md)
+15. [Issuesバックログ](issues/README.md)
 
 ## 完了条件
 
@@ -66,7 +67,7 @@ make release
 
 - 調査基準日: 2026-07-12
 - pinned Carbon nightly: `0.0.0-0.nightly.2026.07.11`
-- syntax driftが起きたらIssue 023のnightly refresh手順を実施する。
+- `carbon-nightly` workflowが新しいnightlyを毎日検証し、通ったものだけをpin更新proposalにする（[手順とrollback](docs/13-carbon-nightly-refresh.md)）。
 
 ## ライセンス
 
