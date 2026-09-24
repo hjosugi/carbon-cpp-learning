@@ -1,87 +1,76 @@
 #!/usr/bin/env bash
-# run-c-abi-experiment.sh
-# Builds the C++ shared library, compiles the Carbon interop file, links, runs
-# nm to confirm the symbol table, then executes and checks boundary values.
+# C ABI experiment (issue #20): build the C++ `extern "C"` seam as a shared
+# library, call it from a Carbon executable, and check the symbol table, the
+# lowered call signature, and the 0/1/31/32 boundary buckets.
 #
-# Prerequisites: Carbon toolchain installed via ./scripts/bootstrap-carbon.sh
-# Usage: bash scripts/run-c-abi-experiment.sh
+# Prerequisite: ./scripts/bootstrap-carbon.sh
 set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="${CARBON_VERSION:-$(<"${root_dir}/.carbon-version")}"
 carbon="${root_dir}/.tools/carbon_toolchain-${version}/bin/carbon"
 loglens_dir="${root_dir}/product/loglens"
+source="${loglens_dir}/carbon_experiments/c_abi_call.carbon"
 build_dir="${root_dir}/build/c-abi-experiment"
+library="${build_dir}/libloglens_c_api.so"
+object="${build_dir}/c_abi_call.o"
+executable="${build_dir}/c_abi_call"
 
 if [[ ! -x "${carbon}" ]]; then
-  echo "Carbon toolchain missing. Run ./scripts/bootstrap-carbon.sh first." >&2
+  echo "Carbon toolchain is missing. Run ./scripts/bootstrap-carbon.sh first." >&2
   exit 2
 fi
 
-mkdir -p "${build_dir}"
-echo "==> Build dir: ${build_dir}"
-
-# ── Step 1: compile C++ shared library ──────────────────────────────────────
-echo
-echo "==> Step 1: compile libloglens_c_api.so"
-g++ -std=c++23 \
-    -I"${loglens_dir}/include" \
-    -O2 -DNDEBUG \
-    -shared -fPIC \
-    "${loglens_dir}/src/c_api.cpp" \
-    "${loglens_dir}/src/aggregator.cpp" \
-    -o "${build_dir}/libloglens_c_api.so"
-echo "OK: ${build_dir}/libloglens_c_api.so"
-
-# ── Step 2: verify exported symbol with nm ───────────────────────────────────
-echo
-echo "==> Step 2: nm -D libloglens_c_api.so | grep loglens"
-nm -D "${build_dir}/libloglens_c_api.so" | grep loglens_bucket_upper
-
-# ── Step 3: compile Carbon source ────────────────────────────────────────────
-echo
-echo "==> Step 3: carbon compile c_abi_call.carbon"
-"${carbon}" compile \
-    -include-search-root="${loglens_dir}/include" \
-    --output="${build_dir}/c_abi_call.o" \
-    "${loglens_dir}/carbon_experiments/c_abi_call.carbon"
-echo "OK: ${build_dir}/c_abi_call.o"
-
-# ── Step 4: link ─────────────────────────────────────────────────────────────
-echo
-echo "==> Step 4: carbon link c_abi_call"
-"${carbon}" link \
-    --output="${build_dir}/c_abi_call" \
-    "${build_dir}/c_abi_call.o" \
-    "${build_dir}/libloglens_c_api.so"
-echo "OK: ${build_dir}/c_abi_call"
-
-# ── Step 5: confirm symbol reference in executable ──────────────────────────
-echo
-echo "==> Step 5: nm -D c_abi_call | grep loglens"
-nm -D "${build_dir}/c_abi_call" | grep loglens_bucket_upper
-
-# ── Step 6: run and check boundary values ────────────────────────────────────
-echo
-echo "==> Step 6: execute and verify bucket 0/1/31/32"
-actual_output="$(LD_LIBRARY_PATH="${build_dir}:${LD_LIBRARY_PATH:-}" \
-    "${build_dir}/c_abi_call")" || {
-  echo "FAIL: c_abi_call exited with code $? (check LD_LIBRARY_PATH and shared library)" >&2
+fail() {
+  echo "FAIL: $*" >&2
   exit 1
 }
-echo "${actual_output}"
 
-expected="0
-1
-2147483647
-4294967295"
+rm -rf "${build_dir}"
+mkdir -p "${build_dir}"
+"${carbon}" version
 
-if [[ "${actual_output}" != "${expected}" ]]; then
-  echo "FAIL: output mismatch" >&2
-  echo "Expected:" >&2
-  echo "${expected}" >&2
-  exit 1
+echo "==> Build the C++ shared library"
+# bucket_upper is constexpr in aggregator.hpp, so c_api.cpp is the whole seam.
+"${CXX:-g++}" -std=c++23 -I"${loglens_dir}/include" -O2 -DNDEBUG \
+  -shared -fPIC "${loglens_dir}/src/c_api.cpp" -o "${library}"
+nm -D --defined-only "${library}" | grep -w loglens_bucket_upper |
+  tee "${build_dir}/nm-library.txt"
+grep -Eq '^[0-9a-f]+ T loglens_bucket_upper$' "${build_dir}/nm-library.txt" ||
+  fail "libloglens_c_api.so does not export loglens_bucket_upper as a text symbol"
+
+echo "==> Compile Carbon against loglens/c_api.h"
+"${carbon}" compile --output-last-input-only \
+  --clang-arg=-I"${loglens_dir}/include" --output="${object}" "${source}"
+
+echo "==> Lowered C call signature"
+"${carbon}" compile --output-last-input-only --phase=lower --dump-llvm-ir \
+  --clang-arg=-I"${loglens_dir}/include" "${source}" >"${build_dir}/c_abi_call.ll"
+grep -E '^declare .*@loglens_bucket_upper\(' "${build_dir}/c_abi_call.ll" |
+  tee "${build_dir}/llvm-declare.txt"
+# uint32_t -> i32 argument, uint64_t -> i64 return, unmangled C name.
+grep -Eq '^declare i64 @loglens_bucket_upper\(i32( noundef)?\)' \
+  "${build_dir}/llvm-declare.txt" ||
+  fail "unexpected lowered signature for loglens_bucket_upper"
+
+echo "==> Link the Carbon executable against the shared library"
+# shellcheck disable=SC2016 # $ORIGIN is expanded by the dynamic loader.
+"${carbon}" link --output="${executable}" "${object}" -- \
+  -L"${build_dir}" -lloglens_c_api '-Wl,-rpath,$ORIGIN'
+nm -D --undefined-only "${executable}" | grep -w loglens_bucket_upper |
+  tee "${build_dir}/nm-executable.txt"
+grep -Eq '^ +U loglens_bucket_upper$' "${build_dir}/nm-executable.txt" ||
+  fail "c_abi_call does not import loglens_bucket_upper dynamically"
+
+echo "==> Run and compare the boundary buckets"
+"${executable}" | tee "${build_dir}/output.txt"
+expected="0 0
+1 1
+31 2147483647
+32 4294967295"
+if [[ "$(<"${build_dir}/output.txt")" != "${expected}" ]]; then
+  printf 'Expected:\n%s\n' "${expected}" >&2
+  fail "boundary values differ from LatencyHistogram::bucket_upper"
 fi
 
-echo
-echo "All boundary values match. C ABI experiment passed."
+echo "C ABI experiment passed."
