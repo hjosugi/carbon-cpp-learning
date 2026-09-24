@@ -17,6 +17,14 @@ Carbonを変更した場合:
 ./scripts/run-carbon-smoke.sh
 ./scripts/run-carbon-katas.sh
 ./scripts/run-carbon-differential.sh
+./scripts/run-carbon-comparisons.sh
+```
+
+C++ comparison lab（`hands-on/cpp`）を変更した場合:
+
+```bash
+make -C hands-on/cpp CXX=g++ test diagnostics
+make -C hands-on/cpp CXX=clang++ test diagnostics
 ```
 
 C ABI (`product/loglens/include/loglens/c_api.h`) またはCarbon interop experimentを変更した場合:
