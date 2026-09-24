@@ -30,6 +30,8 @@ fn Run() {
 
 `extern "C"`は教材側のABI実験を小さくするための選択です。Carbonの最終C++ interop能力をC ABIに限定する意味ではありません。
 
+上のsnippetは設計sketchです。pinned nightlyの`Core.Print`は`i32`しか受け付けないため、`u64`はそのままprintできません。pinned nightlyでcompile/link/runを確認した版は[`c_abi_call.carbon`](../product/loglens/carbon_experiments/c_abi_call.carbon)で、`./scripts/run-c-abi-experiment.sh`がbuild、`nm`、calling convention、0/1/31/32 bucketを検証します。証跡は[C ABI experiment evidence](evidence/c-abi-experiment.md)にあります。
+
 ## Boundary checklist
 
 - ownership: caller/calleeのどちらがallocate/freeするか
