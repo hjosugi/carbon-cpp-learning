@@ -1,0 +1,1 @@
+choice_equality.carbon:12:10: error: cannot access member of interface `Core.EqWith(ParseErrorCode)` in type `ParseErrorCode` that does not implement that interface

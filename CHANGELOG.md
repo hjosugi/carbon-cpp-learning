@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0 - 2026-09-25
+
+- Added a `choice` / errors-as-values comparison: a stdin latency parser with the same Empty / NotDigit / Overflow contract in Carbon (a tagged class, because the pinned nightly rejects choice alternatives with parameters and `match`, recorded as exact diagnostics) and in C++23 with `std::expected`, `std::variant`, and exceptions, plus expected compile errors that show what adding an alternative breaks.
+
 ## 1.2.0 - 2026-09-25
 
 - Added a Carbon port of the histogram core (`BucketFor` / `BucketUpper`) that matches the C++ `LatencyHistogram::bucket_for` / `bucket_upper` byte for byte on every 32-bit bucket edge, with a shift/overflow boundary contract and a C++ oracle pinned by a golden file in `make test`.
