@@ -42,3 +42,15 @@
 - `expect-error/NAME.carbon`: check phaseでrejectされ、`NAME.expected-error`のdiagnosticを出すことを確認する。
 
 実行結果と`let`/`var`、tuple/struct、`as`の説明は[basic syntax katas evidence](../../docs/evidence/basic-syntax-katas.md)にあります。
+
+## C++ comparison labs
+
+`comparisons/`はC++23版（`hands-on/cpp/`）と対になるCarbon版です。pinned nightlyで動く部分は実行し、未実装のdesign部分は`expect-error/`で正確なdiagnosticを固定します。
+
+```bash
+../../scripts/run-carbon-comparisons.sh
+```
+
+| Topic | Evidence |
+| --- | --- |
+| class/value semantics（Issue 005） | [class/value semantics evidence](../../docs/evidence/class-value-semantics.md) |

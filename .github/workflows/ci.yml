@@ -27,6 +27,8 @@ jobs:
         run: make -C product/loglens CXX=${{ matrix.compiler }} test
       - name: Release build
         run: make -C product/loglens CXX=${{ matrix.compiler }} release
+      - name: Comparison lab tests and diagnostics
+        run: make -C hands-on/cpp CXX=${{ matrix.compiler }} test diagnostics
       - name: Sample run
         run: product/loglens/build/release/loglens --input product/loglens/samples/access.log
 

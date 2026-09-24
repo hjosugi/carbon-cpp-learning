@@ -1,0 +1,1 @@
+counter_missing_field.carbon:10:10: error: missing value for field `step` in struct initialization

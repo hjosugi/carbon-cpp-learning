@@ -1,5 +1,19 @@
 # C++23 comparison labs
 
+Carbon版（`hands-on/carbon/comparisons/`）と対になるC++23 codeとtestは、このdirectoryで実行できます。
+
+```bash
+make CXX=g++ test diagnostics
+make CXX=clang++ test diagnostics
+```
+
+- `test`: `*_test.cpp`を`-std=c++23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror`でbuildして実行する。
+- `diagnostics`: `expect-error/NAME.cpp`がcompile errorになり、`NAME.gcc.expected-error`または`NAME.clang.expected-error`の各行を出すことを確認する。
+
+| Lab | Code | Evidence |
+| --- | --- | --- |
+| `Counter` value type（Issue 005） | [`counter/`](counter/) | [class/value semantics](../../docs/evidence/class-value-semantics.md) |
+
 ## 1. Result type
 
 `std::expected<Record, ParseError>`をexception版と比較します。invalid inputが通常eventであるparserに、なぜvalue resultが適するか説明してください。
