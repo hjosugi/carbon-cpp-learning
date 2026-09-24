@@ -29,3 +29,16 @@
 5. C++23で同じcontractを実装する。
 
 `solutions/`は考え方の例です。先に見ず、自分のAPIを設計してください。
+
+## Kata solutions
+
+`solutions/`にはnightly smokeの課題2と4（Issue 004）の解答例と、lossy `as` conversionのkataがあります。pinned nightlyで検証できます。
+
+```bash
+../../scripts/run-carbon-katas.sh
+```
+
+- `NAME.carbon`: compile/link/runし、stdoutを`NAME.expected`と比較する。
+- `expect-error/NAME.carbon`: check phaseでrejectされ、`NAME.expected-error`のdiagnosticを出すことを確認する。
+
+実行結果と`let`/`var`、tuple/struct、`as`の説明は[basic syntax katas evidence](../../docs/evidence/basic-syntax-katas.md)にあります。

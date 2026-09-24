@@ -44,6 +44,8 @@ fn Double(value: i32) -> i32 {
 - loop回数を返す3要素tupleへ変える。
 - 同じAPIをnamed struct resultにすると読みやすくなる場面を説明する。
 
+Lab 1とLab 2の解答例は`hands-on/carbon/solutions/`にあり、`./scripts/run-carbon-katas.sh`が期待outputとcompiler diagnosticを検証します。結果は[basic syntax katas evidence](evidence/basic-syntax-katas.md)を参照してください。
+
 ## Lab 3: classとvalue semantics
 
 `design-labs/04_counter.carbon`を読み、次をC++ classと比較します。

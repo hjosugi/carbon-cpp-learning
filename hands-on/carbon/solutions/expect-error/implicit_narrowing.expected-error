@@ -1,0 +1,1 @@
+error: cannot implicitly convert expression of type `i32` to `i16`
