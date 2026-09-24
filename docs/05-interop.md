@@ -32,6 +32,8 @@ fn Run() {
 
 上のsnippetは設計sketchです。pinned nightlyの`Core.Print`は`i32`しか受け付けないため、`u64`はそのままprintできません。pinned nightlyでcompile/link/runを確認した版は[`c_abi_call.carbon`](../product/loglens/carbon_experiments/c_abi_call.carbon)で、`./scripts/run-c-abi-experiment.sh`がbuild、`nm`、calling convention、0/1/31/32 bucketを検証します。証跡は[C ABI experiment evidence](evidence/c-abi-experiment.md)にあります。
 
+Phase 3の最初の一歩として、histogram core（`bucket_for` / `bucket_upper`）をCarbonへportしました。[`histogram.carbon`](../product/loglens/carbon_experiments/histogram.carbon)はC ABIを経由せず同じcontractをCarbonで実装し、`./scripts/run-carbon-differential.sh`がC++ oracleとbyte単位で比較します。shift/overflow boundaryと比較結果は[Carbon histogram port evidence](evidence/carbon-histogram.md)にあります。
+
 ## Boundary checklist
 
 - ownership: caller/calleeのどちらがallocate/freeするか

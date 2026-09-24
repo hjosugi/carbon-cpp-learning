@@ -6,7 +6,7 @@ CPPFLAGS := -Iinclude
 CXXFLAGS := -std=c++23 -Wall -Wextra -Wpedantic -Wconversion -Wshadow $(EXTRA_CXXFLAGS)
 SOURCES := src/parser.cpp src/aggregator.cpp src/input.cpp src/c_api.cpp
 
-.PHONY: all release debug test integration sanitize fuzz fuzz-build fuzz-long benchmark resource-report bench-matrix check-regression warnings clean
+.PHONY: all release debug test integration histogram-oracle sanitize fuzz fuzz-build fuzz-long benchmark resource-report bench-matrix check-regression warnings clean
 
 all: release
 
@@ -26,9 +26,22 @@ build/test/loglens_tests: $(SOURCES) tests/test_main.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -O2 $^ -o $@
 
+build/test/histogram_oracle: tests/histogram_oracle.cpp include/loglens/aggregator.hpp
+	@mkdir -p $(@D)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -O2 $< -o $@
+
 test: build/test/loglens_tests
 	./build/test/loglens_tests
+	$(MAKE) histogram-oracle
 	$(MAKE) integration
+
+# The C++ reference for the Carbon histogram port must keep producing the
+# recorded bucket-edge results (scripts/run-carbon-differential.sh).
+histogram-oracle: build/test/histogram_oracle
+	./build/test/histogram_oracle boundary >build/test/histogram-boundary.vectors
+	./build/test/histogram_oracle eval <build/test/histogram-boundary.vectors \
+		>build/test/histogram-boundary.txt
+	diff -u tests/golden/histogram-boundary.txt build/test/histogram-boundary.txt
 
 integration: build/debug/loglens build/release/loglens
 	bash tests/integration.sh ./build/debug/loglens
@@ -77,7 +90,8 @@ resource-report:
 	bash bench/resource_report.sh
 
 warnings:
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -Werror -fsyntax-only $(SOURCES) src/main.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -Werror -fsyntax-only $(SOURCES) src/main.cpp \
+		tests/histogram_oracle.cpp
 
 clean:
 	rm -rf build
