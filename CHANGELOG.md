@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 - 2026-09-25
+
+- Added a Carbon port of the histogram core (`BucketFor` / `BucketUpper`) that matches the C++ `LatencyHistogram::bucket_for` / `bucket_upper` byte for byte on every 32-bit bucket edge, with a shift/overflow boundary contract and a C++ oracle pinned by a golden file in `make test`.
+- Added a C++/Carbon differential test: 10,000 deterministic SplitMix64 vectors, vector and output SHA-256 in a compare log, and shrinking of the first mismatch to a one-line reproduction.
+- Added the `Carbon labs (pinned nightly)` CI job and `scripts/check-carbon.sh`, so every Carbon check now runs in CI.
+- Added the `carbon-nightly` workflow: it verifies the newest Carbon nightly with every Carbon check and proposes the pin bump on one rolling branch with a release-notes summary, using only `GITHUB_TOKEN` and never merging.
+- Added a `Counter` class/value-semantics comparison in Carbon and C++23 with expected output, expected diagnostics, and C++ tests in CI.
+
 ## 1.1.0 - 2026-09-24
 
 - Added a LogLens benchmark matrix (1M lines x 1 / 1,000 / 100,000 services) with CPU and peak-RSS regression thresholds in CI, a weekly 100M-line soak workflow, a perf profile script, and a benchmark report with flamegraphs.
