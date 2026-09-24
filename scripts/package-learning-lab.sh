@@ -3,7 +3,7 @@ set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 parent_dir="$(dirname "${root_dir}")"
-archive_name="carbon-cpp-learning-2026-09-24.zip"
+archive_name="carbon-cpp-learning-2026-09-25.zip"
 archive_path="${parent_dir}/${archive_name}"
 
 rm -f "${archive_path}"

@@ -13,7 +13,7 @@ Carbonはまだ`0.1`未到達の実験的言語です。公式nightlyは動き�
 | `hands-on/carbon/nightly-smoke` | 現在のtoolchainを実際にcompile/link/runする | pinned nightlyを基準 |
 | `hands-on/carbon/design-labs` | classes、generics、choice、package設計を学ぶ | design-first。一部は未実装の可能性あり |
 | `hands-on/cpp` | Carbonの狙いをC++23と比較する | GCC 13+/Clang 17+ |
-| `product/loglens` | ストリーミングログ集計CLIを製品品質で実装する | C++23版v1.1.0をテスト済み |
+| `product/loglens` | ストリーミングログ集計CLIを製品品質で実装する | C++23版v1.2.0をテスト済み |
 | `issues` | 学習から製品化までの作業をGitHub Issues化する | そのまま転記可能 |
 
 ## 5分で開始
@@ -51,7 +51,8 @@ make release
 11. [検証結果](docs/10-verification.md)
 12. [Product readiness review](docs/11-readiness-review.md)
 13. [Report schema contract](docs/12-report-schema.md)
-14. [Issuesバックログ](issues/README.md)
+14. [Carbon nightly refresh](docs/13-carbon-nightly-refresh.md)
+15. [Issuesバックログ](issues/README.md)
 
 ## 完了条件
 
@@ -66,7 +67,7 @@ make release
 
 - 調査基準日: 2026-07-12
 - pinned Carbon nightly: `0.0.0-0.nightly.2026.07.11`
-- syntax driftが起きたらIssue 023のnightly refresh手順を実施する。
+- `carbon-nightly` workflowが新しいnightlyを毎日検証し、通ったものだけをpin更新proposalにする（[手順とrollback](docs/13-carbon-nightly-refresh.md)）。
 
 ## ライセンス
 

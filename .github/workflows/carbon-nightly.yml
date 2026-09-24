@@ -1,0 +1,194 @@
+name: carbon-nightly
+
+# Proposes a newer pinned Carbon nightly (issue #23). The pin on main only
+# changes when a person merges the proposal, and a candidate that fails any
+# Carbon check is never proposed, so a broken nightly cannot break main.
+# Procedure and rollback: docs/13-carbon-nightly-refresh.md.
+
+on:
+  schedule:
+    # Carbon publishes nightlies at about 02:30 UTC.
+    - cron: "41 4 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Nightly to verify, e.g. 0.0.0-0.nightly.2026.09.24 (empty: latest)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  # One rolling proposal branch: a newer verified nightly replaces the
+  # previous proposal instead of opening another pull request.
+  BRANCH: carbon-nightly/update
+
+concurrency:
+  group: carbon-nightly
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    name: Discover the candidate nightly
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      current: ${{ steps.release.outputs.current }}
+      version: ${{ steps.release.outputs.version }}
+      propose: ${{ steps.release.outputs.propose }}
+      sha256: ${{ steps.asset.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Find the release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          current="$(<.carbon-version)"
+          version="${REQUESTED:-$(./scripts/carbon-nightly.sh latest)}"
+          propose=true
+          if [[ "${version}" == "${current}" ]]; then
+            echo "The pin is already ${current}." | tee -a "${GITHUB_STEP_SUMMARY}"
+            propose=false
+          elif git fetch --quiet --depth=2 origin "${BRANCH}" 2>/dev/null &&
+            [[ "$(git show FETCH_HEAD:.carbon-version)" == "${version}" &&
+              "$(git rev-parse FETCH_HEAD^)" == "$(git rev-parse HEAD)" ]]; then
+            echo "${BRANCH} already proposes ${version} on top of this commit." |
+              tee -a "${GITHUB_STEP_SUMMARY}"
+            propose=false
+          fi
+          {
+            echo "current=${current}"
+            echo "version=${version}"
+            echo "propose=${propose}"
+          } >>"${GITHUB_OUTPUT}"
+      - name: Check the toolchain asset
+        id: asset
+        if: steps.release.outputs.propose == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: echo "sha256=$(./scripts/carbon-nightly.sh asset "${VERSION}")" >>"${GITHUB_OUTPUT}"
+
+  verify:
+    name: Verify the candidate with every Carbon check
+    needs: discover
+    if: needs.discover.outputs.propose == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARBON_VERSION: ${{ needs.discover.outputs.version }}
+      CARBON_SHA256: ${{ needs.discover.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Install the candidate (SHA-256 from the release asset digest)
+        run: ./scripts/bootstrap-carbon.sh
+      - name: Smoke, katas, pipeline trace, C ABI and C++/Carbon differential
+        run: ./scripts/check-carbon.sh
+      - name: Record the failure
+        if: failure()
+        env:
+          CURRENT: ${{ needs.discover.outputs.current }}
+        run: |
+          {
+            echo "### Carbon ${CARBON_VERSION} failed verification"
+            echo
+            echo "No proposal was made. The pin stays at \`${CURRENT}\`."
+            echo "Reproduce locally with:"
+            echo
+            echo '```bash'
+            echo "CARBON_VERSION=${CARBON_VERSION} CARBON_SHA256=${CARBON_SHA256} ./scripts/bootstrap-carbon.sh"
+            echo "CARBON_VERSION=${CARBON_VERSION} ./scripts/check-carbon.sh"
+            echo '```'
+          } >>"${GITHUB_STEP_SUMMARY}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: carbon-candidate-${{ needs.discover.outputs.version }}
+          path: |
+            build/carbon-differential/
+            build/carbon-katas/
+            build/pipeline-trace/
+          if-no-files-found: warn
+
+  propose:
+    name: Propose the verified pin
+    needs: [discover, verify]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # push the proposal branch (main stays protected)
+      pull-requests: write # open the pull request
+      actions: write # run ci.yml on the branch; pushes by GITHUB_TOKEN start no workflow
+      issues: write # fallback when Actions may not create pull requests
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CURRENT: ${{ needs.discover.outputs.current }}
+      VERSION: ${{ needs.discover.outputs.version }}
+      SHA256: ${{ needs.discover.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Summarize the release notes
+        run: |
+          mkdir -p build
+          ./scripts/carbon-nightly.sh notes "${CURRENT}" "${VERSION}" >build/release-notes.md
+      - name: Update the pin on a proposal branch
+        run: |
+          printf '%s\n' "${VERSION}" >.carbon-version
+          printf '%s\n' "${SHA256}" >.carbon-sha256
+          sed -i "s/^- pinned Carbon nightly: \`.*\`$/- pinned Carbon nightly: \`${VERSION}\`/" README.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --create "${BRANCH}"
+          git commit --all --message "chore(carbon): bump the pinned nightly to ${VERSION}" \
+            --message "Verified by carbon-nightly run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}."
+          # The branch belongs to this workflow; replace any older proposal.
+          git push --force origin "HEAD:refs/heads/${BRANCH}"
+      - name: Open or update the pull request
+        run: |
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          {
+            echo "Bumps the pinned Carbon nightly from \`${CURRENT}\` to \`${VERSION}\`."
+            echo
+            echo "- Archive SHA-256 (release asset digest): \`${SHA256}\`"
+            echo "- Every Carbon check (\`./scripts/check-carbon.sh\`) passed with the candidate in ${run_url}."
+            echo "- This job never merges. Review the release notes below, re-record evidence docs"
+            echo "  that quote toolchain output if needed, and merge by hand."
+            echo "- Rollback: revert this commit (see docs/13-carbon-nightly-refresh.md)."
+            echo
+            cat build/release-notes.md
+          } >build/proposal.md
+          title="chore(carbon): bump the pinned nightly to ${VERSION}"
+          pr="$(gh pr list --state open --head "${BRANCH}" --json number --jq '.[0].number // empty')"
+          if [[ -n "${pr}" ]]; then
+            gh pr edit "${pr}" --title "${title}" --body-file build/proposal.md
+            echo "Updated pull request #${pr}" | tee -a "${GITHUB_STEP_SUMMARY}"
+          elif gh pr create --base main --head "${BRANCH}" --title "${title}" \
+            --body-file build/proposal.md >build/pr-url.txt; then
+            echo "Opened $(<build/pr-url.txt)" | tee -a "${GITHUB_STEP_SUMMARY}"
+          else
+            # Creating pull requests with GITHUB_TOKEN needs the repository
+            # setting "Allow GitHub Actions to create and approve pull
+            # requests". Without it, leave the verified branch in an issue.
+            compare="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/main...${BRANCH}?expand=1"
+            {
+              echo "The verified branch \`${BRANCH}\` is ready, but this workflow may not open"
+              echo "pull requests here. Open it from ${compare}"
+              echo
+              cat build/proposal.md
+            } >build/issue.md
+            issue="$(gh issue list --state open --limit 100 --json number,title \
+              --jq '[.[] | select(.title | startswith("Carbon nightly proposal:"))][0].number // empty')"
+            if [[ -n "${issue}" ]]; then
+              gh issue edit "${issue}" --title "Carbon nightly proposal: ${VERSION}" \
+                --body-file build/issue.md
+              echo "Updated issue #${issue}" | tee -a "${GITHUB_STEP_SUMMARY}"
+            else
+              gh issue create --title "Carbon nightly proposal: ${VERSION}" \
+                --body-file build/issue.md | tee -a "${GITHUB_STEP_SUMMARY}"
+            fi
+          fi
+      - name: Run the required checks on the proposal branch
+        run: gh workflow run ci.yml --ref "${BRANCH}"
