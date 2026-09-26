@@ -66,7 +66,7 @@ make release
 ## 基準日と更新方針
 
 - 調査基準日: 2026-07-12
-- pinned Carbon nightly: `0.0.0-0.nightly.2026.07.11`
+- pinned Carbon nightly: `0.0.0-0.nightly.2026.09.26`
 - `carbon-nightly` workflowが新しいnightlyを毎日検証し、通ったものだけをpin更新proposalにする（[手順とrollback](docs/13-carbon-nightly-refresh.md)）。
 
 ## ライセンス
